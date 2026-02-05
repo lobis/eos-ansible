@@ -14,15 +14,34 @@
     version: master
     force: yes
 
-- name: Build the binary using Go
-  ansible.builtin.shell:
-    cmd: "go build -o /usr/local/bin/eos_exporter"
+- name: Run build info script
+  ansible.builtin.command:
+    cmd: "./get_build_info.sh"
     chdir: "/tmp/eos_exporter_source"
-  environment:
-    CGO_ENABLED: "0"
-    GOOS: "linux"
-  register: build_output
-  changed_when: build_output.rc == 0
+  register: build_info
+  changed_when: false
+
+- name: Build eos_exporter using Makefile
+  ansible.builtin.command:
+    cmd: "make build"
+    chdir: "/tmp/eos_exporter_source"
+
+- name: Verify build success and executable presence
+  ansible.builtin.stat:
+    path: "/tmp/eos_exporter_source/eos_exporter"
+  register: binary_stat
+  failed_when: not binary_stat.stat.exists or not binary_stat.stat.executable
+
+- name: Move binary to /usr/local/bin
+  ansible.builtin.copy:
+    src: "/tmp/eos_exporter_source/eos_exporter"
+    dest: "/usr/local/bin/eos_exporter"
+    mode: '0755'
+    owner: root
+    group: root
+    # Ensures we move it from the remote source to remote dest
+    remote_src: yes
+  when: binary_stat.stat.exists
 
 - name: Create systemd service unit
   ansible.builtin.copy:
@@ -53,6 +72,51 @@
 - name: Ensure port 9986 is open in firewalld
   ansible.posix.firewalld:
     port: 9986/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+
+- name: Add Prometheus RPM repository
+  ansible.builtin.shell:
+    cmd: "curl -s https://packagecloud.io/install/repositories/prometheus-rpm/release/script.rpm.sh | sudo bash"
+  args:
+    creates: /etc/yum.repos.d/prometheus-rpm_release.repo
+
+- name: Install Prometheus
+  ansible.builtin.dnf:
+    name: prometheus
+    state: present
+
+- name: Configure Prometheus to scrape EOS exporter
+  ansible.builtin.copy:
+    dest: /etc/prometheus/prometheus.yml
+    content: |
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+
+      scrape_configs:
+        - job_name: 'prometheus'
+          static_configs:
+            - targets: ['localhost:9090']
+
+        - job_name: 'eos'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:9986']
+    owner: root
+    group: prometheus
+    mode: '0644'
+
+- name: Ensure Prometheus is running and enabled
+  ansible.builtin.systemd:
+    name: prometheus
+    state: started
+    enabled: yes
+
+- name: Open Prometheus web UI port (9090) in firewall
+  ansible.posix.firewalld:
+    port: 9090/tcp
     permanent: yes
     state: enabled
     immediate: yes
