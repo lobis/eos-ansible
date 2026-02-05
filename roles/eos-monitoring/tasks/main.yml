@@ -1,0 +1,58 @@
+---
+- name: Install build dependencies (git, gcc, and golang)
+  ansible.builtin.dnf:
+    name:
+    - git
+    - gcc
+    - golang
+    state: present
+
+- name: Clone the eos_exporter repository
+  ansible.builtin.git:
+    repo: "https://github.com/cern-eos/eos_exporter"
+    dest: "/tmp/eos_exporter_source"
+    version: master
+    force: yes
+
+- name: Build the binary using Go
+  ansible.builtin.shell:
+    cmd: "go build -o /usr/local/bin/eos_exporter"
+    chdir: "/tmp/eos_exporter_source"
+  environment:
+    CGO_ENABLED: "0"
+    GOOS: "linux"
+  register: build_output
+  changed_when: build_output.rc == 0
+
+- name: Create systemd service unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/eos-exporter.service
+    content: |
+      [Unit]
+      Description=EOS Prometheus Exporter
+      After=network.target
+      
+      [Service]
+      Type=simple
+      User=root
+      ExecStart=/usr/local/bin/eos_exporter --eos-instance %H
+      Restart=always
+      RestartSec=5
+      
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+
+- name: Reload systemd and restart exporter
+  ansible.builtin.systemd:
+    name: eos-exporter
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+
+- name: Ensure port 9986 is open in firewalld
+  ansible.posix.firewalld:
+    port: 9986/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes

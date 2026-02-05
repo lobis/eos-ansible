@@ -1,0 +1,61 @@
+---
+- name: Deploy EOS environment configuration
+  ansible.builtin.template:
+    src: eos_env.j2
+    dest: /etc/sysconfig/eos_env
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+  - Restart QuarkDB
+  - Restart MGM
+  - Restart FSTs
+
+- name: EOS QuarkDB configuration
+  ansible.builtin.template:
+    src: xrd.cf.qdb.j2
+    dest: /etc/xrd.cf.qdb
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart QuarkDB
+
+- name: EOS MGM configuration
+  ansible.builtin.template:
+    src: xrd.cf.mgm.j2
+    dest: /etc/xrd.cf.mgm
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart MGM
+
+- name: EOS FSTs configuration
+  ansible.builtin.template:
+    src: xrd.cf.fst.j2
+    dest: "/etc/xrd.cf.fst.{{ item.key }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ eos_fst_instances | dict2items }}"
+  notify: Restart FSTs
+
+# make sure all services are running properly
+
+- name: Ensure EOS QuarkDB is running
+  ansible.builtin.systemd:
+    name: eos@qdb
+    state: started
+    enabled: yes
+
+- name: Ensure EOS MGM is running
+  ansible.builtin.systemd:
+    name: eos@mgm
+    state: started
+    enabled: yes
+
+- name: Ensure EOS FSTs are running
+  ansible.builtin.systemd:
+    name: "eos@fst.{{ item.key }}"
+    state: started
+    enabled: yes
+  loop: "{{ eos_fst_instances | dict2items }}"

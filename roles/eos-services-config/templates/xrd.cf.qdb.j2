@@ -1,0 +1,6 @@
+xrd.port {{ eos_qdb_port }}
+xrd.protocol redis:{{ eos_qdb_port }} libXrdQuarkDB.so
+redis.database /var/lib/qdb
+redis.mode raft
+redis.myself {{ eos_hostname_full }}:{{ eos_qdb_port }}
+redis.password_file /etc/eos.keytab

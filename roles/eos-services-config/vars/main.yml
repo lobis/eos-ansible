@@ -1,0 +1,13 @@
+---
+# ansible_fqdn gives you `hostname.domain.com`
+eos_hostname_full: "{{ ansible_facts['fqdn'] }}"
+
+eos_instance_name: eosdev
+
+eos_qdb_port: 7777
+
+# map FST index to port number
+eos_fst_instances:
+  1: 1191
+  2: 1192
+  3: 1193

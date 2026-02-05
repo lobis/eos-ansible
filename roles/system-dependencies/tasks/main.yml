@@ -1,0 +1,50 @@
+---
+- name: Install Development Tools group
+  dnf:
+    name: "@Development Tools"
+    state: present
+
+- name: Install EPEL and DNF plugins
+  dnf:
+    name:
+      - dnf-plugins-core
+      - epel-release
+    state: present
+
+- name: Enable CRB repository
+  community.general.ini_file:
+    path: /etc/yum.repos.d/almalinux-crb.repo
+    section: crb
+    option: enabled
+    value: "1"
+    mode: '0644'
+
+- name: Upgrade all packages
+  dnf:
+    name: "*"
+    state: latest
+
+- name: Install useful system tools
+  dnf:
+    name:
+      - vim
+      - htop
+      - rsync
+      - git
+      - neovim
+      - gdb
+      - moreutils
+      - which
+    state: present
+
+- name: Install EOS build dependencies
+  dnf:
+    name:
+      - ccache
+      - cmake
+      - gcc-c++
+      - make
+      - rpm-build
+      - rpm-sign
+      - ninja-build
+    state: present

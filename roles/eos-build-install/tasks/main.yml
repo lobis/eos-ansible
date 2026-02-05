@@ -1,0 +1,63 @@
+---
+- name: Check if EOS source directory already exists
+  ansible.builtin.stat:
+    path: "{{ source_dir }}"
+  register: eos_source_check
+
+- name: Ensure Git marks the source directory as safe
+  community.general.git_config:
+    name: safe.directory
+    value: "{{ source_dir }}"
+    scope: global
+    state: present
+
+- name: Clone EOS repository
+  ansible.builtin.git:
+    repo: 'https://github.com/cern-eos/eos.git'
+    dest: "{{ source_dir }}"
+    recursive: yes
+    version: master
+  when: not eos_source_check.stat.exists
+
+- name: Ensure build directory exists
+  ansible.builtin.file:
+    path: "{{ build_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Configure EOS with CMake (Ninja)
+  ansible.builtin.command:
+    cmd: >
+      cmake -G Ninja {{ source_dir }} 
+      -DCMAKE_INSTALL_PREFIX=/usr 
+      -DCMAKE_BUILD_TYPE=Debug 
+      -Wno-dev
+    chdir: "{{ build_dir }}"
+  args:
+    creates: "{{ build_dir }}/build.ninja"
+
+- name: Build and Install EOS
+  ansible.builtin.command:
+    cmd: ninja install
+    chdir: "{{ build_dir }}"
+  become: true
+
+- name: Verify EOS installation
+  ansible.builtin.stat:
+    path: /usr/bin/eos
+  register: eos_binary
+
+- name: Fail if EOS binary was not installed
+  ansible.builtin.fail:
+    msg: "Installation failed: /usr/bin/eos not found."
+  when: not eos_binary.stat.exists
+
+- name: Check EOS version
+  ansible.builtin.command:
+    cmd: eos --version
+  register: eos_version_output
+  changed_when: false
+
+- name: Show EOS version result
+  ansible.builtin.debug:
+    msg: "EOS successfully installed! {{ eos_version_output.stdout }}"

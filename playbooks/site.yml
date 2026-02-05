@@ -1,0 +1,10 @@
+---
+- name: Setup EOS Dev Environment
+  hosts: eos_hosts
+  become: true
+  roles:
+  - { role: system-dependencies, tags: [ 'system-dependencies' ] }
+  - { role: eos-dependencies, tags: [ 'eos-dependencies' ] }
+  - { role: eos-build-install, tags: [ 'eos-build-install' ] }
+  - { role: eos-services-config, tags: [ 'eos-services-config' ] }
+  - { role: eos-monitoring, tags: [ 'eos-monitoring' ] }

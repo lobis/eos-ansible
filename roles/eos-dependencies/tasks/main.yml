@@ -1,0 +1,42 @@
+---
+- name: Add CERN EOS dependencies repository
+  yum_repository:
+    name: eos-depend
+    description: EOS dependencies
+    baseurl: "http://storage-ci.web.cern.ch/storage-ci/eos/{{ eos_codename }}-depend/el-{{ rhel_ver }}/{{ arch }}/"
+    gpgcheck: no
+    enabled: yes
+    priority: "2"
+
+- name: Clean and create work directory
+  file:
+    path: "{{ work_dir }}"
+    state: "{{ item }}"
+  loop: [absent, directory]
+
+- name: Clone EOS repository with submodules
+  git:
+    repo: 'https://github.com/cern-eos/eos.git'
+    dest: "{{ work_dir }}"
+    recursive: yes
+    version: master
+
+- name: Generate SRPM to identify dependencies
+  shell: |
+    mkdir -p build
+    cd build
+    cmake ../ -DPACKAGEONLY=1 -Wno-dev
+    make srpm
+  args:
+    chdir: "{{ work_dir }}"
+    creates: "{{ work_dir }}/build/SRPMS"
+
+- name: Install build dependencies from generated SRPM
+  shell: "dnf builddep -y build/SRPMS/*.src.rpm"
+  args:
+    chdir: "{{ work_dir }}"
+
+- name: Cleanup work directory
+  file:
+    path: "{{ work_dir }}"
+    state: absent

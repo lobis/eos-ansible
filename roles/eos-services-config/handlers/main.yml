@@ -1,0 +1,19 @@
+---
+- name: Restart QuarkDB
+  ansible.builtin.systemd:
+    name: eos@qdb
+    state: restarted
+    daemon_reload: yes
+
+- name: Restart MGM
+  ansible.builtin.systemd:
+    name: eos@mgm
+    state: restarted
+    daemon_reload: yes
+
+- name: Restart FSTs
+  ansible.builtin.systemd:
+    name: "eos@fst.{{ item.key }}"
+    state: restarted
+    daemon_reload: yes
+  loop: "{{ eos_fst_instances | dict2items }}"

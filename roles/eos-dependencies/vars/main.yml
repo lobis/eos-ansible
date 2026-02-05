@@ -1,0 +1,5 @@
+---
+eos_codename: "diopside"
+work_dir: "/tmp/eos-deps"
+rhel_ver: "{{ ansible_facts['distribution_major_version'] }}"
+arch: "{{ ansible_facts['architecture'] }}"

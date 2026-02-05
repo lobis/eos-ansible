@@ -1,0 +1,30 @@
+xrootd.fslib libXrdEosMgm.so
+xrootd.seclib libXrdSec.so
+xrootd.async off nosf
+xrootd.chksum adler32
+xrd.sched mint 8 maxt 256 idle 64
+all.export / nolock
+all.role manager
+oss.fdlimit 16384 32768
+sec.protocol unix
+sec.protocol sss -c /etc/eos.client.keytab -s /etc/eos.keytab
+sec.protbind localhost.localdomain unix sss
+sec.protbind localhost unix sss
+sec.protbind * only sss unix
+mgmofs.fs /
+mgmofs.targetport 1095
+mgmofs.broker root://localhost:1097//eos/
+mgmofs.instance eosdev
+mgmofs.metalog /var/eos/md
+mgmofs.txdir /var/eos/tx
+mgmofs.authdir /var/eos/auth
+mgmofs.archivedir /var/eos/archive
+mgmofs.reportstorepath /var/eos/report
+mgmofs.autoloadconfig default
+mgmofs.auththreads 64
+mgmofs.authport 15555
+mgmofs.authlocal 1
+mgmofs.fstgw someproxy.cern.ch:3001
+mgmofs.nslib /usr/lib64/libEosNsQuarkdb.so
+mgmofs.qdbcluster {{ eos_hostname_full }}:{{ eos_qdb_port }}
+mgmofs.qdbpassword_file /etc/eos.keytab
