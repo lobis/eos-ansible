@@ -2,17 +2,21 @@ xrootd.fslib libXrdEosMgm.so
 xrootd.seclib libXrdSec.so
 xrootd.async off nosf
 xrootd.chksum adler32
+#
 xrd.sched mint 8 maxt 256 idle 64
 all.export / nolock
 all.role manager
 oss.fdlimit 16384 32768
+#
 sec.protocol unix
 sec.protocol krb5 /etc/eos.krb5.keytab host/<host>@CERN.CH
 sec.protocol gsi -crl:0 -cert:/etc/grid-security/daemon/hostcert.pem -key:/etc/grid-security/daemon/hostkey.pem -gridmap:/etc/grid-security/grid-mapfile -d:0 -gmapopt:2 -vomsat:1 -moninfo:1
 sec.protocol sss -c /etc/eos.client.keytab -s /etc/eos.keytab
-sec.protbind localhost.localdomain unix sss krb5 gsi
-sec.protbind localhost unix sss krb5 gsi
-sec.protbind * only sss unix krb5 gsi
+#
+sec.protbind localhost.localdomain unix sss gsi krb5
+sec.protbind localhost unix sss gsi krb5
+sec.protbind * only sss unix gsi krb5
+#
 mgmofs.fs /
 mgmofs.targetport 1095
 mgmofs.broker root://localhost:1097//eos/
@@ -30,3 +34,4 @@ mgmofs.fstgw someproxy.cern.ch:3001
 mgmofs.nslib /usr/lib64/libEosNsQuarkdb.so
 mgmofs.qdbcluster {{ eos_hostname_full }}:{{ eos_qdb_port }}
 mgmofs.qdbpassword_file /etc/eos.keytab
+#
