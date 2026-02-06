@@ -7,10 +7,12 @@ all.export / nolock
 all.role manager
 oss.fdlimit 16384 32768
 sec.protocol unix
+sec.protocol krb5 /etc/eos.krb5.keytab host/<host>@CERN.CH
+sec.protocol gsi -crl:0 -cert:/etc/grid-security/daemon/hostcert.pem -key:/etc/grid-security/daemon/hostkey.pem -gridmap:/etc/grid-security/grid-mapfile -d:0 -gmapopt:2 -vomsat:1 -moninfo:1
 sec.protocol sss -c /etc/eos.client.keytab -s /etc/eos.keytab
-sec.protbind localhost.localdomain unix sss
-sec.protbind localhost unix sss
-sec.protbind * only sss unix
+sec.protbind localhost.localdomain unix sss krb5 gsi
+sec.protbind localhost unix sss krb5 gsi
+sec.protbind * only sss unix krb5 gsi
 mgmofs.fs /
 mgmofs.targetport 1095
 mgmofs.broker root://localhost:1097//eos/
